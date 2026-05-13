@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MapExplorer</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    #map { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+    #fog {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 500;
+    }
+    #player-marker {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: #4fc3f7;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 600;
+      pointer-events: none;
+      box-shadow: 0 0 8px rgba(79, 195, 247, 0.8);
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <canvas id="fog"></canvas>
+  <div id="player-marker"></div>
+
+  <script>
+    // ── 地图初始化 ──────────────────────────────────────────────────
+    const map = L.map('map', {
+      zoomControl: false,
+      attributionControl: false,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+    }).addTo(map);
+
+    // ── Canvas 迷雾初始化 ────────────────────────────────────────────
+    const canvas = document.getElementById('fog');
+    const ctx = canvas.getContext('2d');
+    const playerMarker = document.getElementById('player-marker');
+
+    // 已探索的 GPS 坐标列表（每次地图移动/缩放时用来重绘）
+    const exploredPoints = [];
+
+    // 当前玩家位置
+    let playerLatLng = null;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      redrawFog();
+    }
+
+    function fillBlack() {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function revealPoint(lat, lng, radiusPx) {
+      const point = map.latLngToContainerPoint([lat, lng]);
+      ctx.globalCompositeOperation = 'destination-out';
+      // 中心实心圆 + 渐变边缘，更像饥荒的视野效果
+      const gradient = ctx.createRadialGradient(
+        point.x, point.y, radiusPx * 0.4,
+        point.x, point.y, radiusPx
+      );
+      gradient.addColorStop(0, 'rgba(0,0,0,1)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, radiusPx, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function redrawFog() {
+      fillBlack();
+      exploredPoints.forEach(({ lat, lng, r }) => {
+        revealPoint(lat, lng, r);
+      });
+      updatePlayerMarker();
+    }
+
+    function updatePlayerMarker() {
+      if (!playerLatLng) return;
+      const point = map.latLngToContainerPoint(playerLatLng);
+      playerMarker.style.left = point.x + 'px';
+      playerMarker.style.top = point.y + 'px';
+      playerMarker.style.display = 'block';
+    }
+
+    // 地图平移/缩放后需要重绘，因为屏幕坐标变了
+    map.on('move', redrawFog);
+    map.on('zoom', redrawFog);
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // ── 接收来自 React Native 的消息 ────────────────────────────────
+    // React Native WebView 在 iOS 用 window.ReactNativeWebView.postMessage
+    // 在 WebView 内接收消息：
+    function handleMessage(event) {
+      let data;
+      try {
+        data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+      } catch (e) {
+        return;
+      }
+
+      if (data.type === 'INIT') {
+        // 首次定位：设置地图中心
+        const { lat, lng, zoom } = data;
+        map.setView([lat, lng], zoom || 16);
+        playerLatLng = [lat, lng];
+        addExploredPoint(lat, lng);
+
+      } else if (data.type === 'LOCATION') {
+        // GPS 更新：揭开新区域
+        const { lat, lng } = data;
+        playerLatLng = [lat, lng];
+        addExploredPoint(lat, lng);
+
+      } else if (data.type === 'RESTORE') {
+        // App 重启时批量恢复历史探索点
+        const points = data.points || [];
+        points.forEach(({ lat, lng }) => {
+          exploredPoints.push({ lat, lng, r: 80 });
+        });
+        redrawFog();
+
+      } else if (data.type === 'SET_VIEW') {
+        map.setView([data.lat, data.lng], data.zoom || map.getZoom());
+      }
+    }
+
+    // 同时监听两种消息接收方式（兼容 iOS / Android WebView）
+    window.addEventListener('message', handleMessage);
+    document.addEventListener('message', handleMessage);
+
+    function addExploredPoint(lat, lng) {
+      exploredPoints.push({ lat, lng, r: 80 });
+      revealPoint(lat, lng, 80);
+      updatePlayerMarker();
+    }
+  </script>
+</body>
+</html>

@@ -31,7 +31,7 @@
 **环境要求：** Node.js 18+，手机安装 [Expo Go](https://expo.dev/go)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/MapExplorer.git
+git clone https://github.com/BeinuoYang/MapExplorer.git
 cd MapExplorer
 npm install
 npx expo start --tunnel

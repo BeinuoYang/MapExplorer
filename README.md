@@ -31,7 +31,7 @@ A real-world fog-of-war map exploration app inspired by *Don't Starve*. The map 
 **Requirements:** Node.js 18+, [Expo Go](https://expo.dev/go) app on your phone
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/MapExplorer.git
+git clone https://github.com/BeinuoYang/MapExplorer.git
 cd MapExplorer
 npm install
 npx expo start --tunnel

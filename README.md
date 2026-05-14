@@ -28,6 +28,14 @@ A real-world fog-of-war map exploration app inspired by *Don't Starve*. The map 
 
 ## Getting Started
 
+### Install on Android
+
+Download the latest APK from the project's [GitHub Releases](https://github.com/BeinuoYang/MapExplorer/releases), install it on your Android device, and grant location permission when prompted.
+
+The APK runs independently on the phone. It does not require `npx expo start`, Expo Go, or a computer that stays online.
+
+### Development
+
 **Requirements:** Node.js 18+, [Expo Go](https://expo.dev/go) app on your phone
 
 ```bash
@@ -38,6 +46,18 @@ npx expo start --tunnel
 ```
 
 Scan the QR code with Expo Go. Grant location permission when prompted.
+
+### Build an APK
+
+This project uses EAS Build for Android APK builds:
+
+```bash
+npm install
+npx expo-doctor
+npx eas-cli@latest build --platform android --profile preview
+```
+
+The `preview` build profile creates an internal-distribution APK. Upload release APKs to GitHub Releases instead of committing them to the repository.
 
 ## Project Structure
 

@@ -28,6 +28,14 @@
 
 ## 快速开始
 
+### Android 安装
+
+从项目的 [GitHub Releases](https://github.com/BeinuoYang/MapExplorer/releases) 下载最新 APK，在 Android 手机上安装，并在首次启动时允许位置权限。
+
+APK 安装后可以在手机上独立运行，不再需要电脑执行 `npx expo start`，也不需要 Expo Go 或保持电脑在线。
+
+### 开发调试
+
 **环境要求：** Node.js 18+，手机安装 [Expo Go](https://expo.dev/go)
 
 ```bash
@@ -38,6 +46,18 @@ npx expo start --tunnel
 ```
 
 扫描二维码用 Expo Go 打开，允许位置权限即可。
+
+### 构建 APK
+
+本项目使用 EAS Build 构建 Android APK：
+
+```bash
+npm install
+npx expo-doctor
+npx eas-cli@latest build --platform android --profile preview
+```
+
+`preview` 构建配置会生成内部测试用 APK。发布用 APK 建议上传到 GitHub Releases，不要提交进代码仓库。
 
 ## 项目结构
 
